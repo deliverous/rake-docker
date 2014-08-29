@@ -15,7 +15,7 @@ module Rake
 
       desc "Prepare for build #{@image_name}"
       task :prepare do |prepare_task|
-        sh 'rsync -aqP --exclude Rakefile --delete * .target/'
+        sh 'rsync -aqP Dockerfile src/ .target/'
         v = verbose
         verbose(false) do
           cd '.target' do
