@@ -30,7 +30,7 @@ module Rake
         command << '--no-cache' if Rake.application.options.build_all
         command << '-t' << @image_name << '.target'
         sh *command
-        sh 'touch', build_image_tag
+        touch build_image_tag
       end
 
       FileList['.target/**/*'].each do |file|
