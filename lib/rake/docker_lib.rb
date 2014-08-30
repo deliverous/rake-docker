@@ -3,6 +3,7 @@ require 'time'
 
 module Rake
   class DockerLib < TaskLib
+    Target = '.target'
     attr_accessor :name
     attr_accessor :version
     attr_accessor :image_name
@@ -15,25 +16,25 @@ module Rake
 
       desc "Prepare for build #{@image_name}"
       task :prepare do |prepare_task|
-        sh 'rsync -aqP Dockerfile src/ .target/'
+        sh 'rsync', '-aqP', 'Dockerfile', 'src/', "#{DockerLib::Target}/"
         v = verbose
         verbose(false) do
-          cd '.target' do
+          cd DockerLib::Target do
             verbose(v) { yield prepare_task if block_given? }
           end
         end
       end
 
-      build_image_tag = ".target/.#{@image_name.tr('/: |&', '_')}"
+      build_image_tag = "#{DockerLib::Target}/.#{@image_name.tr('/: |&', '_')}"
       file build_image_tag do 
         command = ['docker', 'build']
         command << '--no-cache' if Rake.application.options.build_all
-        command << '-t' << @image_name << '.target'
+        command << '-t' << @image_name << DockerLib::Target
         sh *command
         touch build_image_tag
       end
 
-      FileList['.target/**/*'].each do |file|
+      FileList["#{DockerLib::Target}/**/*"].each do |file|
         file build_image_tag => [file]
       end
 
