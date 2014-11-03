@@ -16,7 +16,7 @@ module Rake
 
       desc "Prepare for build #{@image_name}"
       task :prepare do |prepare_task|
-        sh 'rsync', '-aqP', 'Dockerfile', 'src/', "#{DockerLib::Target}/"
+        sh 'rsync', '-aqP', 'Dockerfile', 'src/', "#{DockerLib::Target}/" if Dir.exists?('src')
         v = verbose
         verbose(false) do
           cd DockerLib::Target do
