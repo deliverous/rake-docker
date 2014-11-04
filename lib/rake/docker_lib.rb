@@ -8,15 +8,20 @@ module Rake
     attr_accessor :version
     attr_accessor :image_name
 
-    def initialize(name=nil, version=nil)
+    def initialize(name=nil, options={})
       fail "name required" if name.nil?
       @version = version
       @image_name = name
       @image_name = @image_name +":#{@version}" unless version.nil?
+      no_cache = options[:no_cache] || false
+      version = options[:version] || nil
 
       desc "Prepare for build #{@image_name}"
       task :prepare do |prepare_task|
-        sh 'rsync', '-aqP', 'Dockerfile', 'src/', "#{DockerLib::Target}/" if Dir.exists?('src')
+        command = ['rsync', '-aqP', 'Dockerfile']
+        command << 'src/' if Dir.exists?('src')
+        command << "#{DockerLib::Target}/"
+        sh *command
         v = verbose
         verbose(false) do
           cd DockerLib::Target do
@@ -28,7 +33,7 @@ module Rake
       build_image_tag = "#{DockerLib::Target}/.#{@image_name.tr('/: |&', '_')}"
       file build_image_tag do 
         command = ['docker', 'build']
-        command << '--no-cache' if Rake.application.options.build_all
+        command << '--no-cache' if (Rake.application.options.build_all or no_cache)
         command << '-t' << @image_name << DockerLib::Target
         sh *command
         touch build_image_tag
