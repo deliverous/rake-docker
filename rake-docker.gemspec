@@ -5,12 +5,11 @@ Gem::Specification.new do |spec|
   spec.authors = ["Deliverous R&D"]
   spec.email = ["contact@deliverous.com"]
   spec.homepage = "http://deliverous.com/"
-  spec.summary = "Rake tasks relative to git"
+  spec.summary = "Rake tasks relative to docker"
   spec.description = ""
 
   spec.required_rubygems_version = ">= 1.3.6"
 
-  spec.add_dependency 'colorize'
   spec.add_dependency 'rake'
 
   spec.files = Dir["{lib}/**/*.rb", "{lib}/**/*.erb", "{bin}/*", "{lib}/**/*.rake", "{lib}/**/*.yml", "LICENSE", "*.md", "templates/**"]
