@@ -10,7 +10,7 @@ module Rake
 
     def initialize(name=nil, options={})
       fail "name required" if name.nil?
-      @version = version
+      @version = options[:version]
       @image_name = name
       @image_name = @image_name +":#{@version}" unless version.nil?
       no_cache = options[:no_cache] || false
