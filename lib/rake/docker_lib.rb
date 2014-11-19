@@ -13,6 +13,7 @@ module Rake
       @version = options[:version]
       @image_name = name
       @image_name = @image_name +":#{@version}" unless version.nil?
+      @test_options = options[:test_options] || ""
       no_cache = options[:no_cache] || false
       version = options[:version] || nil
 
@@ -53,6 +54,36 @@ module Rake
 
       desc "Publish #{@image_name}"
       task publish: [:build, :push]
+
+      desc "Test container #{@image_name}"
+      task test: [:build] do
+        test_name = "#{name.split('/')[-1]}-test"
+        sh "docker run -d --name '#{test_name}' #{@test_options} #{@image_name}"
+        begin
+          ruby "-S testrb #{test_files} #{test_options}" do |ok, status|
+            if !ok && status.respond_to?(:signaled?) && status.signaled?
+              raise SignalException.new(status.termsig)
+            elsif !ok
+              fail "Command failed with status (#{status.exitstatus}): " + "[ruby #{args}]"
+            end
+          end
+        ensure
+          sh "docker stop '#{test_name}'"
+          sh "docker rm '#{test_name}'"
+        end    
+      end
+    end
+
+    def test_options
+      (ENV['TESTOPTS'] || ENV['TESTOPT'] || ENV['TEST_OPTS'] || ENV['TEST_OPT'] || "")
+    end
+
+    def test_files
+      if ENV['TEST']
+        ENV['TEST']
+      else
+        Dir.glob('./test/**/test*.rb').map { |file| "\"#{file}\""}.join(" ")
+      end
     end
   end
 end
