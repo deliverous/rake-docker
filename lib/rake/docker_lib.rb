@@ -64,7 +64,7 @@ module Rake
             if !ok && status.respond_to?(:signaled?) && status.signaled?
               raise SignalException.new(status.termsig)
             elsif !ok
-              fail "Command failed with status (#{status.exitstatus}): " + "[ruby #{args}]"
+              fail "Command failed with status (#{status.exitstatus})"
             end
           end
         ensure
