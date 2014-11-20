@@ -2,23 +2,26 @@ require 'rake/tasklib'
 require 'time'
 
 module Rake
+
   class DockerLib < TaskLib
     Target = '.target'
     attr_accessor :name
     attr_accessor :version
     attr_accessor :image_name
 
-    def initialize(name=nil, options={})
+    def initialize(name=nil, options={}, &block)
       fail "name required" if name.nil?
       @version = options[:version]
       @image_name = name
       @image_name = @image_name +":#{@version}" unless version.nil?
-      @test_options = options[:test_options] || ""
       no_cache = options[:no_cache] || false
       version = options[:version] || nil
 
+      tasks = DockerTasks.new
+      tasks.instance_eval &block
+
       desc "Prepare for build #{@image_name}"
-      task :prepare do |prepare_task|
+      task :prepare do
         command = ['rsync', '-aqP', 'Dockerfile']
         command << 'src/' if Dir.exists?('src')
         command << "#{DockerLib::Target}/"
@@ -26,7 +29,7 @@ module Rake
         v = verbose
         verbose(false) do
           cd DockerLib::Target do
-            verbose(v) { yield prepare_task if block_given? }
+            verbose(v) { instance_eval &tasks.prepare_config if not tasks.prepare_config.nil? }
           end
         end
       end
@@ -57,8 +60,8 @@ module Rake
 
       desc "Test container #{@image_name}"
       task test: [:build] do
-        test_name = "#{name.split('/')[-1]}-test"
-        sh "docker run -d --name '#{test_name}' #{@test_options} #{@image_name}"
+        test_name = tasks.test_config.image_value || "#{name.split('/')[-1]}-test"
+        sh "docker run -d --name '#{test_name}' #{tasks.test_config.option_value} #{@image_name} #{tasks.test_config.args_value}"
         begin
           ruby "-S testrb #{test_files} #{test_options}" do |ok, status|
             if !ok && status.respond_to?(:signaled?) && status.signaled?
@@ -86,4 +89,48 @@ module Rake
       end
     end
   end
+
+
+  class DockerTestConfig
+    attr_reader :image_value
+    attr_reader :option_value
+    attr_reader :args_value
+
+    def initialize
+      @image_value = nil
+      @option_value = ''
+      @args_value = ''
+    end
+
+    def image(value)
+      @image_value = value
+    end
+
+    def args(value)
+      @args_value = value
+    end
+
+    def options(value)
+      @option_value = value
+    end
+  end
+
+
+  class DockerTasks
+    attr_reader :prepare_config
+    attr_reader :test_config
+
+    def initialize
+      @test_config = DockerTestConfig.new
+    end
+
+    def prepare(&block)
+      @prepare_config = block
+    end
+
+    def test(&block)
+      @test_config.instance_eval &block
+    end
+  end
+
 end
