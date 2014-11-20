@@ -56,10 +56,10 @@ module Rake
       end
 
       desc "Publish #{@image_name}"
-      task publish: [:build, :push]
+      task publish: [:build, :test, :push]
 
       desc "Test container #{@image_name}"
-      task test: [:build] do
+      task :test do
         test_name = tasks.test_config.image_value || "#{name.split('/')[-1]}-test"
         sh "docker run -d --name '#{test_name}' #{tasks.test_config.option_value} #{@image_name} #{tasks.test_config.args_value}"
         begin
