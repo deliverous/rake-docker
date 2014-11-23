@@ -1,5 +1,6 @@
 require 'rake/tasklib'
 require 'time'
+require 'climate_control'
 
 module Rake
 
@@ -60,20 +61,15 @@ module Rake
 
       desc "Test container #{@image_name}"
       task :test do
-        test_name = tasks.test_config.image_value || "#{name.split('/')[-1]}-test"
-        sh "docker run -d --name '#{test_name}' #{tasks.test_config.option_value} #{@image_name} #{tasks.test_config.args_value}"
-        begin
-          ruby "-S testrb #{test_files} #{test_options}" do |ok, status|
+        ClimateControl.modify DOCKER_IMAGE: @image_name do
+          ruby "#{test_files} #{test_options}" do |ok, status|
             if !ok && status.respond_to?(:signaled?) && status.signaled?
               raise SignalException.new(status.termsig)
             elsif !ok
               fail "Command failed with status (#{status.exitstatus})"
             end
           end
-        ensure
-          sh "docker stop '#{test_name}'"
-          sh "docker rm '#{test_name}'"
-        end    
+        end
       end
     end
 
@@ -91,45 +87,14 @@ module Rake
   end
 
 
-  class DockerTestConfig
-    attr_reader :image_value
-    attr_reader :option_value
-    attr_reader :args_value
-
-    def initialize
-      @image_value = nil
-      @option_value = ''
-      @args_value = ''
-    end
-
-    def image(value)
-      @image_value = value
-    end
-
-    def args(value)
-      @args_value = value
-    end
-
-    def options(value)
-      @option_value = value
-    end
-  end
-
-
   class DockerTasks
     attr_reader :prepare_config
-    attr_reader :test_config
 
     def initialize
-      @test_config = DockerTestConfig.new
     end
 
     def prepare(&block)
       @prepare_config = block
-    end
-
-    def test(&block)
-      @test_config.instance_eval &block
     end
   end
 
