@@ -62,7 +62,7 @@ module Rake
       desc "Test container #{@image_name}"
       task :test do
         ClimateControl.modify DOCKER_IMAGE: @image_name do
-          ruby "#{test_files} #{test_options}" do |ok, status|
+          ruby "-e \"ARGV.each{|f| require f}\" #{test_files} #{test_options}" do |ok, status|
             if !ok && status.respond_to?(:signaled?) && status.signaled?
               raise SignalException.new(status.termsig)
             elsif !ok
