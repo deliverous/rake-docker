@@ -19,7 +19,7 @@ module Rake
       version = options[:version] || nil
 
       tasks = DockerTasks.new
-      tasks.instance_eval &block
+      tasks.instance_eval &block if block
 
       desc "Prepare for build #{@image_name}"
       task :prepare do
@@ -36,7 +36,7 @@ module Rake
       end
 
       build_image_tag = "#{DockerLib::Target}/.#{@image_name.tr('/: |&', '_')}"
-      file build_image_tag do 
+      file build_image_tag do
         command = ['docker', 'build']
         command << '--no-cache' if (Rake.application.options.build_all or no_cache)
         command << '-t' << @image_name << DockerLib::Target
